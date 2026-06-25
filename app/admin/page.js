@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { linkWhatsApp } from "@/lib/whatsapp";
 
@@ -49,6 +50,12 @@ function abrirWhatsApp(telefone, mensagem) {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
+
+  // Estado da sessão: null = ainda verificando; false = sem login; true = logado.
+  // Enquanto for null não renderizamos a lista (evita "piscar" o conteúdo).
+  const [autenticado, setAutenticado] = useState(null);
+
   const [agendamentos, setAgendamentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -81,7 +88,48 @@ export default function AdminPage() {
     setAgendamentoParaCancelar(null);
   }
 
+  // Verifica a sessão ao montar e fica ouvindo mudanças (login/logout em
+  // outra aba também caem aqui). Sem sessão → manda pro login.
   useEffect(() => {
+    let ativo = true;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!ativo) return;
+      if (!session) {
+        setAutenticado(false);
+        router.replace("/admin/login");
+        return;
+      }
+      setAutenticado(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_evento, session) => {
+      if (!ativo) return;
+      if (!session) {
+        setAutenticado(false);
+        router.replace("/admin/login");
+        return;
+      }
+      setAutenticado(true);
+    });
+
+    return () => {
+      ativo = false;
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+  async function handleSair() {
+    await supabase.auth.signOut();
+    router.replace("/admin/login");
+  }
+
+  useEffect(() => {
+    // Só busca os agendamentos depois de confirmar que há sessão ativa.
+    if (autenticado !== true) return;
+
     async function carregar() {
       setErro("");
       setCarregando(true);
@@ -105,16 +153,36 @@ export default function AdminPage() {
     }
 
     carregar();
-  }, []);
+  }, [autenticado]);
+
+  // Enquanto verifica a sessão (ou já sabemos que não há), não renderiza a
+  // lista — o redirect pro login cuida do resto.
+  if (autenticado !== true) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
+        <p className="text-sm text-zinc-500">Carregando...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-2xl">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-zinc-900">Agendamentos</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Visão do barbeiro — próximos horários primeiro.
-          </p>
+        <header className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900">Agendamentos</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Visão do barbeiro — próximos horários primeiro.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSair}
+            className="shrink-0 rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-700 ring-1 ring-zinc-300 transition hover:bg-zinc-50"
+          >
+            Sair
+          </button>
         </header>
 
         {carregando && (
