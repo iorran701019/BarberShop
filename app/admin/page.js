@@ -64,27 +64,63 @@ export default function AdminPage() {
   // null = nenhum modal aberto.
   const [agendamentoParaCancelar, setAgendamentoParaCancelar] = useState(null);
 
-  // Botão A: por enquanto só abre o WhatsApp com a mensagem de confirmação.
-  function handleConfirmar(agendamento) {
+  // Reflete o novo status no estado local, atualizando só o item alterado
+  // (evita refazer o fetch inteiro). O badge muda de cor automaticamente.
+  function atualizarStatusLocal(id, status) {
+    setAgendamentos((atuais) =>
+      atuais.map((item) => (item.id === id ? { ...item, status } : item))
+    );
+  }
+
+  // Botão A: grava o status 'confirmado' no banco e, se der certo, abre o
+  // WhatsApp com a mensagem de confirmação. Em caso de erro não abre o
+  // WhatsApp (não anuncia confirmação que não foi gravada).
+  async function handleConfirmar(agendamento) {
+    const { error } = await supabase
+      .from("agendamentos")
+      .update({ status: "confirmado" })
+      .eq("id", agendamento.id);
+
+    if (error) {
+      setErro(`Não foi possível confirmar o agendamento: ${error.message}`);
+      return;
+    }
+
+    setErro("");
+    atualizarStatusLocal(agendamento.id, "confirmado");
+
     abrirWhatsApp(
       agendamento.telefone,
       `Olá ${agendamento.nome_cliente}! Seu agendamento de Corte simples no dia ${formatarData(
         agendamento.data
       )} às ${formatarHorario(agendamento.horario)} está confirmado. Será um prazer lhe atender! ✅`
     );
-    // TODO: atualizar status no banco
   }
 
-  // Botão B: só roda DEPOIS que o dono confirma no modal. Por enquanto só abre
-  // o WhatsApp com a mensagem de cancelamento e fecha o modal.
-  function handleCancelar(agendamento) {
+  // Botão B: só roda DEPOIS que o dono confirma no modal. Grava o status
+  // 'cancelado' no banco e, se der certo, abre o WhatsApp com a mensagem de
+  // cancelamento. Em caso de erro não abre o WhatsApp.
+  async function handleCancelar(agendamento) {
+    const { error } = await supabase
+      .from("agendamentos")
+      .update({ status: "cancelado" })
+      .eq("id", agendamento.id);
+
+    if (error) {
+      setErro(`Não foi possível cancelar o agendamento: ${error.message}`);
+      setAgendamentoParaCancelar(null);
+      return;
+    }
+
+    setErro("");
+    atualizarStatusLocal(agendamento.id, "cancelado");
+
     abrirWhatsApp(
       agendamento.telefone,
       `Olá ${agendamento.nome_cliente}. Infelizmente seu agendamento de Corte simples no dia ${formatarData(
         agendamento.data
       )} às ${formatarHorario(agendamento.horario)} foi cancelado. Caso queira reagendar, acesse o link: http://localhost:3000/agendar .`
     );
-    // TODO: atualizar status no banco
     setAgendamentoParaCancelar(null);
   }
 
@@ -240,25 +276,35 @@ export default function AdminPage() {
                   </span>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmar(item)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 ring-1 ring-green-100 transition hover:bg-green-100"
-                  >
-                    <IconeWhatsApp />
-                    Confirmar agendamento
-                  </button>
+                {/* "cancelado" é estado terminal: trava os dois botões da
+                    linha (apagados, sem clique). Não volta a outro status. */}
+                {(() => {
+                  const cancelado = item.status === "cancelado";
+                  const confirmado = item.status === "confirmado";
+                  return (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleConfirmar(item)}
+                        disabled={cancelado || confirmado}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 ring-1 ring-green-100 transition hover:bg-green-100 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 disabled:ring-zinc-200 disabled:hover:bg-zinc-100"
+                      >
+                        <IconeWhatsApp />
+                        Confirmar agendamento
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setAgendamentoParaCancelar(item)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50"
-                  >
-                    <IconeWhatsApp />
-                    Cancelar agendamento
-                  </button>
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => setAgendamentoParaCancelar(item)}
+                        disabled={cancelado}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-red-200 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 disabled:ring-zinc-200 disabled:hover:bg-zinc-100"
+                      >
+                        <IconeWhatsApp />
+                        Cancelar agendamento
+                      </button>
+                    </div>
+                  );
+                })()}
               </li>
             ))}
           </ul>
