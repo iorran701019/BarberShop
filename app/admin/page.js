@@ -119,7 +119,7 @@ export default function AdminPage() {
       agendamento.telefone,
       `Olá ${agendamento.nome_cliente}. Infelizmente seu agendamento de Corte simples no dia ${formatarData(
         agendamento.data
-      )} às ${formatarHorario(agendamento.horario)} foi cancelado. Caso queira reagendar, acesse o link: http://localhost:3000/agendar .`
+      )} às ${formatarHorario(agendamento.horario)} foi cancelado. Caso queira reagendar, acesse o link: ${process.env.NEXT_PUBLIC_URL_BASE}/agendar .`
     );
     setAgendamentoParaCancelar(null);
   }
