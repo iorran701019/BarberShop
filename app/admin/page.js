@@ -78,7 +78,7 @@ function abrirWhatsApp(telefone, mensagem) {
 async function buscarAgendamentos() {
   const { data, error } = await supabase
     .from("agendamentos")
-    .select("id, nome_cliente, telefone, data, horario, status, created_at")
+    .select("id, nome_cliente, telefone, data, horario, status, created_at, servicos(nome)")
     .order("data", { ascending: true })
     .order("horario", { ascending: true });
 
@@ -132,7 +132,9 @@ export default function AdminPage() {
 
     abrirWhatsApp(
       agendamento.telefone,
-      `Olá ${agendamento.nome_cliente}! Seu agendamento de Corte simples no dia ${formatarData(
+      `Olá ${agendamento.nome_cliente}! Seu agendamento de ${
+        agendamento.servicos?.nome ?? "serviço"
+      } no dia ${formatarData(
         agendamento.data
       )} às ${formatarHorario(agendamento.horario)} está confirmado. Será um prazer lhe atender! ✅`
     );
@@ -158,7 +160,9 @@ export default function AdminPage() {
 
     abrirWhatsApp(
       agendamento.telefone,
-      `Olá ${agendamento.nome_cliente}. Infelizmente seu agendamento de Corte simples no dia ${formatarData(
+      `Olá ${agendamento.nome_cliente}. Infelizmente seu agendamento de ${
+        agendamento.servicos?.nome ?? "serviço"
+      } no dia ${formatarData(
         agendamento.data
       )} às ${formatarHorario(agendamento.horario)} foi cancelado. Caso queira reagendar, acesse o link: ${process.env.NEXT_PUBLIC_URL_BASE}/agendar .`
     );
@@ -395,6 +399,12 @@ export default function AdminPage() {
                     <span className="text-zinc-400">Horário</span>
                     <span className="font-medium">
                       {formatarHorario(item.horario)}
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-zinc-400">Serviço</span>
+                    <span className="font-medium">
+                      {item.servicos?.nome ?? "—"}
                     </span>
                   </span>
                 </div>
