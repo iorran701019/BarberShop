@@ -287,7 +287,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-2xl font-bold text-zinc-900">Agendamentos</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              Visão do barbeiro — próximos horários primeiro.
+              Próximos horários primeiro.
             </p>
           </div>
 
@@ -442,7 +442,7 @@ export default function AdminPage() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="titulo-cancelar"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 px-4"
           onClick={() => setAgendamentoParaCancelar(null)}
         >
           <div

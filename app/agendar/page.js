@@ -327,7 +327,7 @@ export default function AgendarPage() {
             Solicitação enviada!
           </h1>
           <p className="mt-2 text-sm text-zinc-500">
-            Recebemos seu agendamento. Em breve a barbearia confirma seu horário.
+            Recebemos seu agendamento. Em breve o estabelecimento confirma seu horário.
           </p>
 
           <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700 ring-1 ring-amber-200">
@@ -359,7 +359,7 @@ export default function AgendarPage() {
           <button
             type="button"
             onClick={novoAgendamento}
-            className="mt-6 w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800"
+            className="mt-6 w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary-hover"
           >
             Fazer novo agendamento
           </button>
@@ -415,7 +415,7 @@ export default function AgendarPage() {
                   className={[
                     "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ring-1 transition",
                     atual
-                      ? "bg-zinc-900 text-white ring-zinc-900"
+                      ? "bg-primary text-white ring-primary"
                       : concluida
                       ? "bg-green-100 text-green-700 ring-green-200"
                       : "bg-white text-zinc-400 ring-zinc-200",
@@ -497,7 +497,7 @@ export default function AgendarPage() {
                         className={[
                           "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left ring-1 transition",
                           selecionado
-                            ? "bg-zinc-900 text-white ring-zinc-900"
+                            ? "bg-primary text-white ring-primary"
                             : "bg-white text-zinc-700 ring-zinc-300 hover:border-zinc-900 hover:ring-zinc-400",
                         ].join(" ")}
                       >
@@ -542,7 +542,7 @@ export default function AgendarPage() {
                   onChange={handleChange}
                   min={hoje}
                   required
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </div>
 
@@ -612,7 +612,7 @@ export default function AgendarPage() {
                               ocupado
                                 ? "cursor-not-allowed bg-zinc-100 text-zinc-300 line-through ring-zinc-200"
                                 : selecionado
-                                ? "bg-zinc-900 text-white ring-zinc-900"
+                                ? "bg-primary text-white ring-primary"
                                 : "bg-white text-zinc-700 ring-zinc-300 hover:border-zinc-900 hover:ring-zinc-400",
                             ].join(" ")}
                           >
@@ -650,7 +650,7 @@ export default function AgendarPage() {
                   onChange={handleChange}
                   required
                   placeholder="Seu nome"
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </div>
 
@@ -667,14 +667,14 @@ export default function AgendarPage() {
                   onChange={handleChange}
                   required
                   placeholder="(24) 99999-9999"
-                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                  className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={enviando}
-                className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {enviando ? "Enviando..." : "Confirmar agendamento"}
               </button>

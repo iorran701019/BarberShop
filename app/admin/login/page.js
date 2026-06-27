@@ -40,7 +40,7 @@ export default function LoginPage() {
         <header className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-zinc-900">Entrar</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Acesso restrito à barbearia.
+            Acesso restrito.
           </p>
         </header>
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="voce@exemplo.com"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
           </div>
 
@@ -78,14 +78,14 @@ export default function LoginPage() {
               onChange={(e) => setSenha(e.target.value)}
               required
               placeholder="Sua senha"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-zinc-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
           </div>
 
           <button
             type="submit"
             disabled={entrando}
-            className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {entrando ? "Entrando..." : "Entrar"}
           </button>
