@@ -66,26 +66,39 @@ function formatarPreco(centavos) {
   });
 }
 
-// Helper PURO (sem setState): busca no banco os horários já ocupados na data.
-// A regra de status (ignorar cancelados) vive só aqui. Devolve sempre
-// { ocupados, error } pra quem chama decidir o que fazer com o estado.
+// "HH:MM" ou "HH:MM:SS" -> minutos desde a meia-noite. Base para tratar cada
+// reserva e cada slot candidato como intervalos e detectar sobreposição.
+function horaParaMin(hora) {
+  const [h, m] = hora.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Helper PURO (sem setState): busca no banco as reservas ativas da data e as
+// devolve como INTERVALOS ocupados em minutos. A regra de status (ignorar
+// cancelados) vive só aqui. Devolve sempre { ocupados, error } pra quem chama
+// decidir o que fazer com o estado.
 async function buscarOcupados(data, duracaoMin) {
   // Sem data ou dia fechado (gerarSlots vazio): nada a consultar.
   if (!data || gerarSlots(data, duracaoMin).length === 0) {
     return { ocupados: [], error: null };
   }
 
+  // A view slots_ocupados já expõe só reservas ativas (status <> 'cancelado')
+  // sem vazar dados pessoais; agora também traz a duração de cada reserva.
   const { data: linhas, error } = await supabase
     .from("slots_ocupados")
-    .select("horario")
+    .select("horario, duracao_min")
     .eq("data", data);
 
   if (error) return { ocupados: [], error };
 
-  // O Postgres devolve horario como "HH:MM:SS"; normalizamos pra "HH:MM"
-  // senão a comparação com os slots gerados não bate.
+  // Cada reserva vira um intervalo [inicio, inicio + duracao_min) em minutos:
+  // é a sobreposição (não a igualdade de horário) que trava um slot.
   return {
-    ocupados: (linhas ?? []).map((l) => l.horario.slice(0, 5)),
+    ocupados: (linhas ?? []).map((l) => {
+      const inicio = horaParaMin(l.horario);
+      return { inicio, fim: inicio + l.duracao_min };
+    }),
     error: null,
   };
 }
@@ -147,7 +160,6 @@ export default function AgendarPage() {
   // Calculado a cada render: barato e mantém a fonte da verdade na função pura.
   // A duração do serviço escolhido define o passo entre os horários.
   const slots = gerarSlots(form.data, servicoSelecionado?.duracao_min);
-  const ocupadosSet = new Set(ocupados);
 
   const [hoje] = useState(dataDeHoje);
 
@@ -262,12 +274,15 @@ export default function AgendarPage() {
     setEnviando(false);
 
     if (error) {
-      // 23505 = violação da UNIQUE (data, horario): alguém reservou primeiro.
-      const ehHorarioDuplicado =
-        error.code === "23505" ||
-        /duplicate key|violates unique constraint/i.test(error.message ?? "");
+      // 23P01 = violação da exclusion constraint agendamentos_sem_sobreposicao:
+      // outra reserva sobrepõe esse intervalo — alguém ocupou primeiro.
+      const ehHorarioOcupado =
+        error.code === "23P01" ||
+        /agendamentos_sem_sobreposicao|exclusion constraint/i.test(
+          error.message ?? ""
+        );
 
-      if (ehHorarioDuplicado) {
+      if (ehHorarioOcupado) {
         setErro("Esse horário acabou de ser reservado. Escolha outro.");
         setHorarioSelecionado("");
         // Recarrega os ocupados pra esse horário passar a aparecer travado.
@@ -596,7 +611,17 @@ export default function AgendarPage() {
                   {!carregandoSlots && !erroSlots && slotsDisponiveis.length > 0 && (
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                       {slotsDisponiveis.map((slot) => {
-                        const ocupado = ocupadosSet.has(slot);
+                        // O slot candidato começa em `slot` e dura a duração do
+                        // serviço escolhido, formando [candInicio, candFim).
+                        // Travado se sobrepuser qualquer intervalo ocupado.
+                        const candInicio = horaParaMin(slot);
+                        const candFim =
+                          candInicio + servicoSelecionado.duracao_min;
+                        const ocupado = ocupados.some(
+                          (intervalo) =>
+                            candInicio < intervalo.fim &&
+                            intervalo.inicio < candFim
+                        );
                         const selecionado = horarioSelecionado === slot;
 
                         return (
