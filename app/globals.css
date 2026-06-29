@@ -71,3 +71,25 @@ a:focus-visible, button:focus-visible {
   .fc .fc-list-event td { padding: 0.6rem 0.5rem; }
   .fc-theme-standard .fc-list-day-cushion { padding: 0.5rem 0.6rem; }
 }
+
+/* Eventos só nas views de grade de horário (timeGrid — Dia/Semana): título
+   (nome·serviço) primeiro, horário depois, centralizado na horizontal e na
+   vertical só quando há sobra (senão encosta no topo via `safe center`).
+   Específico de evento timeGrid — vale em qualquer tela. */
+.fc-timegrid-event .fc-event-main { padding: 2px 4px; }
+.fc-timegrid-event .fc-event-main-frame {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;   /* centraliza se couber; topo se apertar */
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+  height: 100%;
+}
+.fc-timegrid-event .fc-event-title-container { order: 1; flex-grow: 0; }
+.fc-timegrid-event .fc-event-time {
+  order: 2; font-weight: 400; font-size: 0.7rem; opacity: 0.85;
+}
+.fc-timegrid-event .fc-event-title {
+  font-weight: 600; white-space: normal; line-height: 1.15;
+}
