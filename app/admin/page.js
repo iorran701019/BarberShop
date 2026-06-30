@@ -80,10 +80,12 @@ function rotuloHistorico(item) {
 }
 
 // Texto + cores do badge por categoria do histórico. Concluído em verde
-// apagado, caducado neutro/cinza, cancelado em vermelho apagado.
+// apagado, caducado (exibido como "Vencido") neutro/cinza, cancelado em
+// vermelho apagado. A chave `caducado` é interna (vem de rotuloHistorico /
+// lib/particao) — só o rótulo exibido muda.
 const HISTORICO_META = {
   concluido: { rotulo: "Concluído", classe: "bg-green-50 text-green-600 ring-green-100" },
-  caducado: { rotulo: "Caducado", classe: "bg-surface text-body ring-border" },
+  caducado: { rotulo: "Vencido", classe: "bg-surface text-body ring-border" },
   cancelado: { rotulo: "Cancelado", classe: "bg-red-50 text-red-500 ring-red-100" },
 };
 
@@ -115,10 +117,10 @@ const ABAS_PAI = [
 // Filtros da aba Histórico (client-side, por categoria de rotuloHistorico).
 // "todos" não filtra. Os ids batem com as categorias de HISTORICO_META.
 const FILTROS_HISTORICO = [
-  { id: "concluido", rotulo: "Concluído" },
-  { id: "caducado", rotulo: "Caducado" },
-  { id: "cancelado", rotulo: "Cancelado" },
   { id: "todos", rotulo: "Todos" },
+  { id: "concluido", rotulo: "Concluído" },
+  { id: "caducado", rotulo: "Vencido" },
+  { id: "cancelado", rotulo: "Cancelado" },
 ];
 
 // Abre a conversa do WhatsApp do cliente em nova aba, com a mensagem pronta.
@@ -440,8 +442,8 @@ export default function AdminPage() {
       return chaveB.localeCompare(chaveA);
     });
 
-  // Contagem por categoria (Concluído/Caducado/Cancelado) + "todos", pros
-  // contadores das abas de filtro.
+  // Contagem por categoria (Concluído/Vencido/Cancelado) + "todos", pros
+  // contadores do filtro.
   const contagensHistorico = { concluido: 0, caducado: 0, cancelado: 0, todos: historico.length };
   for (const item of historico) {
     contagensHistorico[rotuloHistorico(item)] += 1;
@@ -462,25 +464,19 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-surface">
-      <Hero compacto nome={estabelecimento.nome} />
+      {/* Wrapper relativo SÓ aqui no /admin pra ancorar o botão "Sair" no canto
+          do header. O Hero é compartilhado com as páginas públicas e não muda. */}
+      <div className="relative">
+        <Hero compacto nome={estabelecimento.nome} />
+        <button
+          type="button"
+          onClick={handleSair}
+          className="absolute right-3 top-3 z-10 rounded-lg border border-border bg-card/80 px-3 py-1.5 text-xs font-medium text-heading shadow-sm backdrop-blur-sm transition hover:bg-card sm:right-4 sm:top-4"
+        >
+          Sair
+        </button>
+      </div>
       <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:py-16">
-        <header className="mb-6 flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-heading">Agendamentos</h1>
-            <p className="mt-1 text-sm text-body">
-              Próximos horários primeiro.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSair}
-            className="shrink-0 rounded-lg bg-card px-3 py-2 text-sm font-medium text-body ring-1 ring-border transition hover:bg-surface"
-          >
-            Sair
-          </button>
-        </header>
-
         {/* Abas-pai: Pendentes (inbox) · Painel (calendário) · Histórico · Agendar. */}
         <div className="mb-4 flex gap-1 rounded-xl bg-surface p-1">
           {ABAS_PAI.map((aba) => {
@@ -548,20 +544,24 @@ export default function AdminPage() {
                     </span>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-4 text-sm text-body">
-                    <span className="inline-flex items-center gap-1.5">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-body">
+                    <span className="inline-flex min-w-0 items-center gap-1.5">
                       <span className="text-body">Data</span>
                       <span className="font-medium">{formatarData(item.data)}</span>
                     </span>
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex min-w-0 items-center gap-1.5">
                       <span className="text-body">Horário</span>
                       <span className="font-medium">
                         {formatarHorario(item.horario)}
                       </span>
                     </span>
-                    <span className="inline-flex items-center gap-1.5">
+                    {/* Serviço pode ter nome longo: no mobile empilha (rótulo em
+                        cima, valor embaixo) e ocupa a linha inteira; a partir de
+                        sm volta a ficar lado a lado. min-w-0 + break-words deixam
+                        o nome quebrar dentro do card em vez de estourar a borda. */}
+                    <span className="flex min-w-0 basis-full flex-col items-start gap-0.5 sm:basis-auto sm:flex-row sm:items-center sm:gap-1.5">
                       <span className="text-body">Serviço</span>
-                      <span className="font-medium">
+                      <span className="min-w-0 break-words font-medium">
                         {item.servicos?.nome ?? "—"}
                       </span>
                     </span>
@@ -606,32 +606,25 @@ export default function AdminPage() {
             É lista (não calendário) — clique aqui NÃO abre o modal do Painel. */}
         {!carregando && !erro && viewPai === "historico" && (
           <>
-            {/* Filtros por categoria, com contador. "todos" não filtra. */}
-            <div className="mb-4 flex gap-1 rounded-xl bg-surface p-1">
-              {FILTROS_HISTORICO.map((filtro) => {
-                const ativa = filtroHistorico === filtro.id;
-                return (
-                  <button
-                    key={filtro.id}
-                    type="button"
-                    onClick={() => setFiltroHistorico(filtro.id)}
-                    className={`flex-1 rounded-lg px-2 py-2 text-sm font-medium transition ${
-                      ativa
-                        ? "bg-card text-heading shadow-sm ring-1 ring-border"
-                        : "text-body hover:text-heading"
-                    }`}
-                  >
-                    {filtro.rotulo}
-                    <span
-                      className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-semibold ${
-                        ativa ? "bg-surface text-body" : "bg-border text-body"
-                      }`}
-                    >
-                      {contagensHistorico[filtro.id]}
-                    </span>
-                  </button>
-                );
-              })}
+            {/* Filtro por categoria como <select> (lista suspensa): cabe na
+                largura do mobile sem scroll horizontal. O contador de cada
+                categoria vai no próprio texto da opção. "todos" não filtra. */}
+            <div className="mb-4">
+              <label htmlFor="filtro-historico" className="sr-only">
+                Filtrar histórico
+              </label>
+              <select
+                id="filtro-historico"
+                value={filtroHistorico}
+                onChange={(e) => setFiltroHistorico(e.target.value)}
+                className="w-full rounded-lg bg-card px-3 py-2 text-sm font-medium text-heading shadow-sm ring-1 ring-border transition focus:outline-none focus:ring-2 focus:ring-border"
+              >
+                {FILTROS_HISTORICO.map((filtro) => (
+                  <option key={filtro.id} value={filtro.id}>
+                    {filtro.rotulo} ({contagensHistorico[filtro.id]})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {historicoVisivel.length === 0 ? (
@@ -657,7 +650,7 @@ export default function AdminPage() {
                           </p>
                         </div>
 
-                        {/* Rótulo derivado (Concluído/Caducado/Cancelado). O
+                        {/* Rótulo derivado (Concluído/Vencido/Cancelado). O
                             status cru no banco NÃO muda. */}
                         <span
                           className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${meta.classe}`}
@@ -666,22 +659,28 @@ export default function AdminPage() {
                         </span>
                       </div>
 
-                      <div className="mt-3 flex items-center gap-4 text-sm text-body">
-                        <span className="inline-flex items-center gap-1.5">
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-body">
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
                           <span className="text-body">Data</span>
                           <span className="font-medium">
                             {formatarData(item.data)}
                           </span>
                         </span>
-                        <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-flex min-w-0 items-center gap-1.5">
                           <span className="text-body">Horário</span>
                           <span className="font-medium">
                             {formatarHorario(item.horario)}
                           </span>
                         </span>
-                        <span className="inline-flex items-center gap-1.5">
+                        {/* Serviço pode ter nome longo: no mobile empilha (rótulo
+                            em cima, valor embaixo) e ocupa a linha inteira; a
+                            partir de sm volta a ficar lado a lado. min-w-0 +
+                            break-words deixam o nome quebrar dentro do card em
+                            vez de estourar a borda. (Mesma correção dos cards de
+                            Pendentes.) */}
+                        <span className="flex min-w-0 basis-full flex-col items-start gap-0.5 sm:basis-auto sm:flex-row sm:items-center sm:gap-1.5">
                           <span className="text-body">Serviço</span>
-                          <span className="font-medium">
+                          <span className="min-w-0 break-words font-medium">
                             {item.servicos?.nome ?? "—"}
                           </span>
                         </span>
